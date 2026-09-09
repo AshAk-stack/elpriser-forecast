@@ -77,9 +77,6 @@ def fetch_and_load_day(target_date: date, cur):
     return len(records)
  
  
-# ---------------------------------------------------------------------------
-# 2. MODELING LAYER (new: keeps dim_date and fact_prices in sync automatically)
-# ---------------------------------------------------------------------------
 def upsert_dim_date(target_date: date, cur):
     """Make sure dim_date has a row for this date. Safe to run every time (no-op if it exists)."""
     cur.execute(
@@ -133,14 +130,12 @@ def run():
     with psycopg2.connect(conn_string) as conn:
         with conn.cursor() as cur:
  
-            # Step A: raw ingestion for today + tomorrow
             for day in (today, tomorrow):
                 inserted = fetch_and_load_day(day, cur)
                 upsert_dim_date(day, cur)
                 conn.commit()
                 print(f"[{day}] Raw: {inserted} intervals ingested. dim_date row ensured.")
  
-            # Step B: push any new raw rows into the modeled star schema
             upsert_fact_prices(cur)
             conn.commit()
             print("fact_prices synced with electricity_prices.")
