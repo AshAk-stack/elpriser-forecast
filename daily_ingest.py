@@ -15,38 +15,10 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 
 conn_string = f"host={DB_HOST} dbname={DB_NAME} user={DB_USER} password={DB_PASS} port={DB_PORT} sslmode=require"
 
-def fetch_and_load_day(target_date: date, cur):
-    year = target_date.strftime("%Y")
-    month_day = target_date.strftime("%m-%d")
-    url = f"https://www.elprisetjustnu.se/api/v1/prices/{year}/{month_day}_SE3.json"
 
-    response = requests.get(url, timeout=10)
-    if response.status_code == 404:
-        print(f"[{target_date}] Data not available yet (404).")
-        return 0
-    response.raise_for_status()
-
-    records = [
-        (
-            item["time_start"],
-            item["time_end"],
-            item["SEK_per_kWh"],
-            item["EUR_per_kWh"],
-            "SE3",
-        )
-        for item in response.json()
-    ]
-
-    insert_query = """
-        INSERT INTO electricity_prices (time_start, time_end, sek_per_kwh, eur_per_kwh, zone)
-        VALUES %s
-        ON CONFLICT ON CONSTRAINT unique_interval_zone DO NOTHING;
-    """
-    execute_values(cur, insert_query, records)
-    return len(records)
 
 def fetch_and_load_day(target_date: date, cur):
-    """Pull one day's 15-min prices from the API and land them in the raw table."""
+    """fetch one day's 15-min prices from the API and bring them in the raw table."""
     year = target_date.strftime("%Y")
     month_day = target_date.strftime("%m-%d")
     url = f"https://www.elprisetjustnu.se/api/v1/prices/{year}/{month_day}_SE3.json"
@@ -78,6 +50,7 @@ def fetch_and_load_day(target_date: date, cur):
  
  
 def upsert_dim_date(target_date: date, cur):
+    """Make sure dim_date has a row for this date..."""
     cur.execute(
         """
         INSERT INTO dim_date (date_id, year, month, day, weekday, is_weekend, season)
@@ -101,7 +74,7 @@ def upsert_dim_date(target_date: date, cur):
 
 
 def upsert_fact_prices(cur):
-
+    """Push any rows from the raw table into fact_prices that aren't there yet."""
     cur.execute(
         """
         INSERT INTO fact_prices (date_id, zone_id, time_start, time_end, sek_per_kwh, eur_per_kwh)
