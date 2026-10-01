@@ -78,7 +78,6 @@ def fetch_and_load_day(target_date: date, cur):
  
  
 def upsert_dim_date(target_date: date, cur):
-    """Make sure dim_date has a row for this date. Safe to run every time (no-op if it exists)."""
     cur.execute(
         """
         INSERT INTO dim_date (date_id, year, month, day, weekday, is_weekend, season)
@@ -102,10 +101,7 @@ def upsert_dim_date(target_date: date, cur):
 
 
 def upsert_fact_prices(cur):
-    """
-    Push any rows from the raw table into fact_prices that aren't there yet.
-    Joins to dim_zone to translate the zone code (e.g. 'SE3') into its zone_id.
-    """
+
     cur.execute(
         """
         INSERT INTO fact_prices (date_id, zone_id, time_start, time_end, sek_per_kwh, eur_per_kwh)
@@ -134,7 +130,7 @@ def run():
                 inserted = fetch_and_load_day(day, cur)
                 upsert_dim_date(day, cur)
                 conn.commit()
-                print(f"[{day}] Raw: {inserted} intervals ingested. dim_date row ensured.")
+                print(f"[{day}] Raw: {inserted} intervals ingested.")
  
             upsert_fact_prices(cur)
             conn.commit()

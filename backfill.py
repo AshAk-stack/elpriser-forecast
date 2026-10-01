@@ -16,7 +16,6 @@ DB_PORT = "5432"
 
 conn_string = f"host={DB_HOST} dbname={DB_NAME} user={DB_USER} password={DB_PASS} port={DB_PORT} sslmode=require"
 
-# 2. Date range: Oct 1, 2025 to today
 start_date = date(2025, 10, 1)
 end_date = date.today()
 
@@ -29,7 +28,6 @@ def daterange(start, end):
 print("Connecting to Azure PostgreSQL...")
 with psycopg2.connect(conn_string) as conn:
     with conn.cursor() as cur:
-        # Create table with unique constraint on (time_start, zone)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS electricity_prices (
                 id SERIAL PRIMARY KEY,
@@ -64,7 +62,6 @@ with psycopg2.connect(conn_string) as conn:
                 print(f"[{single_date}] Network error: {e}. Skipping.")
                 continue
 
-            # Transform into records tuple
             records = [
                 (
                     item["time_start"],
@@ -76,7 +73,6 @@ with psycopg2.connect(conn_string) as conn:
                 for item in day_data
             ]
 
-            # Bulk insert with ON CONFLICT DO NOTHING
             insert_query = """
                 INSERT INTO electricity_prices (time_start, time_end, sek_per_kwh, eur_per_kwh, zone)
                 VALUES %s
@@ -87,7 +83,6 @@ with psycopg2.connect(conn_string) as conn:
             conn.commit()
             print(f"[{single_date}] Inserted {len(records)} intervals.")
 
-            # Gentle sleep to avoid hammering the free API
             time.sleep(0.1)
 
 print("\nBackfill complete. All data loaded successfully.")

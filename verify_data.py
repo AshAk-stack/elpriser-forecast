@@ -12,7 +12,7 @@ DB_PASS = os.getenv("DB_PASS")
 DB_PORT = "5432"
 conn_string = f"host={DB_HOST} dbname={DB_NAME} user={DB_USER} password={DB_PASS} port={DB_PORT} sslmode=require"
 
-print("Connecting to Azure to verify data...\n")
+print("Connecting to Azure to verify data\n")
 
 with psycopg2.connect(conn_string) as conn:
     with conn.cursor() as cur:
@@ -21,7 +21,6 @@ with psycopg2.connect(conn_string) as conn:
         total_rows = cur.fetchone()[0]
         print(f"Total records in database: {total_rows}")
 
-        # 2. View the 5 most recent intervals
         print("\n--- Last 5 Intervals ---")
         cur.execute("""
             SELECT time_start, sek_per_kwh 
@@ -32,7 +31,6 @@ with psycopg2.connect(conn_string) as conn:
         for row in cur.fetchall():
             print(f"Time: {row[0]} | Price: {row[1]} SEK")
 
-        # 3. Find the most expensive 15-minute interval so far
         print("\n--- Highest Price Recorded ---")
         cur.execute("""
             SELECT time_start, sek_per_kwh 
