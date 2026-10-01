@@ -16,7 +16,6 @@ print("Connecting to Azure to verify data\n")
 
 with psycopg2.connect(conn_string) as conn:
     with conn.cursor() as cur:
-        # 1. Check total row count
         cur.execute("SELECT COUNT(*) FROM electricity_prices;")
         total_rows = cur.fetchone()[0]
         print(f"Total records in database: {total_rows}")
